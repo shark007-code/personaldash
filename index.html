@@ -16,14 +16,14 @@ html,body{height:100%;margin:0;}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:720px;margin-inline:auto;}
 h1{font-size:1.25rem;margin:4px 0 4px;}
 .subtitle{font-size:.75rem;color:var(--muted);margin-bottom:14px;}
-.top-actions{display:flex;gap:8px;margin-bottom:14px;}
+.top-actions{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
 .top-actions button{font-size:.72rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;}
 .areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-bottom:10px;}
 .area-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;}
 .area-card.active{outline:2px solid var(--accent);}
 .area-card .n{font-size:1.35rem;font-weight:700;}
 .area-card .label{font-size:.7rem;color:var(--muted);}
-.manage-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:.75rem;cursor:pointer;margin-bottom:14px;}
+.manage-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:.75rem;cursor:pointer;}
 .manage{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;}
 .manage-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:.85rem;border-bottom:1px solid var(--border);}
 .manage-row:last-child{border-bottom:none;}
@@ -31,22 +31,34 @@ h1{font-size:1.25rem;margin:4px 0 4px;}
 .manage-row .rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px;}
 .manage form{display:flex;gap:6px;margin:10px 0 0;}
 .insights{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:.83rem;line-height:1.6;}
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px;}
-.day{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 2px;text-align:center;font-size:.68rem;cursor:pointer;}
-.day.today{border-color:var(--accent);}
-.day.active{outline:2px solid var(--accent);}
-.day .count{font-weight:700;font-size:.9rem;min-height:1.1em;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cal-header button{background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:.9rem;}
+.cal-header .label{font-weight:600;font-size:.9rem;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-grid.dow{margin-bottom:4px;}
+.cal-dow{font-size:.62rem;color:var(--muted);text-align:center;}
+.cal-day{background:var(--card);border:1px solid var(--border);border-radius:8px;min-height:36px;padding:4px 2px;text-align:center;font-size:.72rem;cursor:pointer;}
+.cal-day.empty{background:transparent;border-color:transparent;cursor:default;}
+.cal-day.today{border-color:var(--accent);}
+.cal-day.active{outline:2px solid var(--accent);}
+.cal-day .count{display:block;font-size:.6rem;font-weight:700;color:var(--accent);}
+.calendar-wrap{margin-bottom:14px;}
 form{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
 input,select,button{font-size:.83rem;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);}
 input[type=text]{flex:1;min-width:140px;}
 button{background:var(--accent);color:#fff;border:none;cursor:pointer;}
 .task{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
-.task.done .title{text-decoration:line-through;color:var(--muted);}
 .task .title{flex:1;font-size:.86rem;}
 .task .meta{font-size:.68rem;color:var(--muted);}
 .overdue{color:#dc2626;}
 .del{background:none;color:var(--muted);border:none;font-size:1rem;cursor:pointer;padding:2px 6px;}
 .empty{color:var(--muted);font-size:.83rem;text-align:center;padding:18px 0;}
+.history{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;}
+.history-group .date{font-size:.7rem;color:var(--muted);margin:10px 0 4px;}
+.history-group:first-child .date{margin-top:0;}
+.history-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:.83rem;}
+.history-item .t{flex:1;color:var(--muted);text-decoration:line-through;}
+.history-item button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;padding:2px 5px;}
 </style>
 </head>
 <body>
@@ -56,9 +68,10 @@ button{background:var(--accent);color:#fff;border:none;cursor:pointer;}
   <button type="button" onclick="exportBackup()">⬇ Export backup</button>
   <button type="button" onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
   <input type="file" id="importFile" accept="application/json" style="display:none">
+  <button class="manage-toggle" type="button" onclick="toggleManage()">⚙ Categories</button>
+  <button class="manage-toggle" type="button" onclick="toggleHistory()">🕘 History</button>
 </div>
 <div class="areas" id="areas"></div>
-<button class="manage-toggle" id="manageToggle" type="button" onclick="toggleManage()">⚙ Manage categories</button>
 <div class="manage" id="manage" style="display:none">
   <div id="manageList"></div>
   <form id="addAreaForm">
@@ -66,8 +79,21 @@ button{background:var(--accent);color:#fff;border:none;cursor:pointer;}
     <button type="submit">Add</button>
   </form>
 </div>
+<div class="history" id="history" style="display:none">
+  <div id="historyList"></div>
+</div>
 <div class="insights" id="insights"></div>
-<div class="week" id="week"></div>
+<div class="calendar-wrap">
+  <div class="cal-header">
+    <button type="button" onclick="changeMonth(-1)">‹</button>
+    <div class="label" id="calLabel"></div>
+    <button type="button" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="cal-grid dow">
+    <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
 <form id="form">
   <input type="text" id="title" placeholder="New task..." required>
   <select id="area"></select>
@@ -78,7 +104,7 @@ button{background:var(--accent);color:#fff;border:none;cursor:pointer;}
 
 <script>
 const STORAGE_KEY = 'weeklyPanelData';
-const DEFAULT_STATE = {"areas":[{"id":"unsorted","name":"Unsorted"},{"id":"personal","name":"Personal"},{"id":"work","name":"Work"},{"id":"gcm","name":"GCM"},{"id":"english","name":"English"},{"id":"mealprep","name":"Meal Prep"}],"tasks":[{"id":"t1","title":"Organize this month's bills","area":"personal","due":null,"done":false},{"id":"t2","title":"Study schedule - next exam","area":"english","due":null,"done":false},{"id":"t3","title":"Confirm this week's orders","area":"mealprep","due":null,"done":false},{"id":"t4","title":"Review course material","area":"gcm","due":null,"done":false}]};
+const DEFAULT_STATE = {"areas":[{"id":"unsorted","name":"Unsorted"},{"id":"personal","name":"Personal"},{"id":"work","name":"Work"},{"id":"gcm","name":"GCM"},{"id":"english","name":"English"},{"id":"mealprep","name":"Meal Prep"}],"tasks":[{"id":"t1","title":"Organize this month's bills","area":"personal","due":null,"completedAt":null},{"id":"t2","title":"Study schedule - next exam","area":"english","due":null,"completedAt":null},{"id":"t3","title":"Confirm this week's orders","area":"mealprep","due":null,"completedAt":null},{"id":"t4","title":"Review course material","area":"gcm","due":null,"completedAt":null}]};
 
 let STATE;
 try {
@@ -88,10 +114,13 @@ try {
   STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 let filter = null;
+let viewYear, viewMonth;
+(function(){ const d=new Date(); viewYear=d.getFullYear(); viewMonth=d.getMonth(); })();
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
 function fmtDate(iso){ if(!iso) return ''; const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function monthLabel(y,m){ return new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); }
 function areaName(id){ const a=STATE.areas.find(a=>a.id===id); return a?a.name:id; }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -117,7 +146,7 @@ document.getElementById('importFile').addEventListener('change', function(e){
   reader.onload = function(ev){
     try {
       const data = JSON.parse(ev.target.result);
-      if(data && data.areas && data.tasks){ STATE = data; save(); renderManage(); }
+      if(data && data.areas && data.tasks){ STATE = data; save(); }
       else alert('Invalid backup file.');
     } catch(err){ alert('Could not read this file.'); }
   };
@@ -129,44 +158,51 @@ function render(){
   const today = todayISO();
   document.getElementById('areas').innerHTML =
     STATE.areas.map(a=>{
-      const pend = STATE.tasks.filter(t=>t.area===a.id && !t.done).length;
+      const pend = STATE.tasks.filter(t=>t.area===a.id && !t.completedAt).length;
       return `<div class="area-card ${filter===a.id?'active':''}" onclick="setFilter('${a.id}')"><div class="n">${pend}</div><div class="label">${a.name}</div></div>`;
     }).join('') +
-    `<div class="area-card ${filter===null?'active':''}" onclick="setFilter(null)"><div class="n">${STATE.tasks.filter(t=>!t.done).length}</div><div class="label">All</div></div>`;
+    `<div class="area-card ${filter===null?'active':''}" onclick="setFilter(null)"><div class="n">${STATE.tasks.filter(t=>!t.completedAt).length}</div><div class="label">All</div></div>`;
 
-  const overdue = STATE.tasks.filter(t=>!t.done && t.due && t.due<today).length;
-  const next7 = STATE.tasks.filter(t=>!t.done && t.due && t.due>=today && t.due<=addDays(today,7)).length;
+  const overdue = STATE.tasks.filter(t=>!t.completedAt && t.due && t.due<today).length;
+  const next7 = STATE.tasks.filter(t=>!t.completedAt && t.due && t.due>=today && t.due<=addDays(today,7)).length;
   let topArea=null, topN=0;
-  STATE.areas.forEach(a=>{ const n=STATE.tasks.filter(t=>t.area===a.id&&!t.done).length; if(n>topN){topN=n; topArea=a.name;} });
+  STATE.areas.forEach(a=>{ const n=STATE.tasks.filter(t=>t.area===a.id&&!t.completedAt).length; if(n>topN){topN=n; topArea=a.name;} });
   const bits=[];
   if(overdue>0) bits.push('<span class="overdue">⚠️ '+overdue+' overdue task(s)</span>');
   bits.push('📅 '+next7+' task(s) due in the next 7 days');
   if(topN>0) bits.push('📌 Most pending: '+topArea+' ('+topN+')');
   document.getElementById('insights').innerHTML = bits.length? bits.join(' &nbsp;•&nbsp; ') : 'All caught up ✨';
 
-  let wk='';
-  for(let i=0;i<7;i++){
-    const iso = addDays(today,i);
-    const d = new Date(iso+'T00:00:00');
-    const n = STATE.tasks.filter(t=>!t.done && t.due===iso).length;
-    const key='day:'+iso;
-    wk += `<div class="day ${i===0?'today':''} ${filter===key?'active':''}" onclick="setDayFilter('${iso}')"><div>${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="count">${n||''}</div></div>`;
+  document.getElementById('calLabel').textContent = monthLabel(viewYear, viewMonth);
+  const first = new Date(viewYear, viewMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  let cells = '';
+  for(let i=0;i<startDow;i++){ cells += '<div class="cal-day empty"></div>'; }
+  for(let day=1; day<=daysInMonth; day++){
+    const iso = viewYear+'-'+String(viewMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const n = STATE.tasks.filter(t=>!t.completedAt && t.due===iso).length;
+    const key = 'day:'+iso;
+    cells += `<div class="cal-day ${iso===today?'today':''} ${filter===key?'active':''}" onclick="setDayFilter('${iso}')">${day}${n?'<span class="count">'+n+'</span>':''}</div>`;
   }
-  document.getElementById('week').innerHTML = wk;
+  document.getElementById('calGrid').innerHTML = cells;
 
   document.getElementById('area').innerHTML = STATE.areas.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
 
-  let list = STATE.tasks.slice().sort((a,b)=> (a.due||'9999')<(b.due||'9999')?-1:1);
+  let list = STATE.tasks.filter(t=>!t.completedAt).sort((a,b)=> (a.due||'9999')<(b.due||'9999')?-1:1);
   if(filter && filter.indexOf('day:')===0) list = list.filter(t=>t.due===filter.slice(4));
   else if(filter) list = list.filter(t=>t.area===filter);
   const tasksEl = document.getElementById('tasks');
   if(list.length===0){ tasksEl.innerHTML = '<div class="empty">No tasks here ✨</div>'; }
   else {
     tasksEl.innerHTML = list.map(t=>{
-      const late = !t.done && t.due && t.due<today;
-      return `<div class="task ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')"><div style="flex:1"><div class="title">${escapeHtml(t.title)}</div><div class="meta ${late?'overdue':''}">${areaName(t.area)}${t.due?' • '+fmtDate(t.due):''}</div></div><button class="del" onclick="deleteTask('${t.id}')">✕</button></div>`;
+      const late = t.due && t.due<today;
+      return `<div class="task"><input type="checkbox" onchange="toggleTask('${t.id}')"><div style="flex:1"><div class="title">${escapeHtml(t.title)}</div><div class="meta ${late?'overdue':''}">${areaName(t.area)}${t.due?' • '+fmtDate(t.due):''}</div></div><button class="del" onclick="deleteTask('${t.id}')">✕</button></div>`;
     }).join('');
   }
+
+  renderManage();
+  renderHistory();
 }
 
 function renderManage(){
@@ -179,20 +215,43 @@ function renderManage(){
   }).join('');
 }
 
+function renderHistory(){
+  const completed = STATE.tasks.filter(t=>t.completedAt).sort((a,b)=> a.completedAt<b.completedAt?1:-1);
+  const el = document.getElementById('historyList');
+  if(completed.length===0){ el.innerHTML = '<div class="empty">No completed tasks yet</div>'; return; }
+  const groups = {};
+  completed.forEach(t=>{ const d=t.completedAt.slice(0,10); (groups[d] = groups[d]||[]).push(t); });
+  const dates = Object.keys(groups).sort().reverse();
+  el.innerHTML = dates.map(d=>{
+    const items = groups[d].map(t=>`<div class="history-item"><span class="t">${escapeHtml(t.title)} · ${areaName(t.area)}</span><button onclick="restoreTask('${t.id}')" title="Restore">↺</button><button onclick="purgeTask('${t.id}')" title="Delete">✕</button></div>`).join('');
+    return `<div class="history-group"><div class="date">${fmtDate(d)}</div>${items}</div>`;
+  }).join('');
+}
+
 function setFilter(id){ filter = filter===id? null : id; render(); }
 function setDayFilter(iso){ const key='day:'+iso; filter = filter===key? null : key; render(); }
-function toggleTask(id){ const t=STATE.tasks.find(t=>t.id===id); if(t){ t.done=!t.done; save(); } }
+function changeMonth(delta){
+  viewMonth += delta;
+  if(viewMonth<0){ viewMonth=11; viewYear--; }
+  if(viewMonth>11){ viewMonth=0; viewYear++; }
+  render();
+}
+function toggleTask(id){ const t=STATE.tasks.find(t=>t.id===id); if(t){ t.completedAt = new Date().toISOString(); save(); } }
 function deleteTask(id){ STATE.tasks = STATE.tasks.filter(t=>t.id!==id); save(); }
+function restoreTask(id){ const t=STATE.tasks.find(t=>t.id===id); if(t){ t.completedAt=null; save(); } }
+function purgeTask(id){ if(!confirm('Delete this task permanently?')) return; STATE.tasks = STATE.tasks.filter(t=>t.id!==id); save(); }
 function toggleManage(){
   const el = document.getElementById('manage');
-  const show = el.style.display==='none';
-  el.style.display = show? 'block':'none';
-  if(show) renderManage();
+  el.style.display = el.style.display==='none' ? 'block':'none';
+}
+function toggleHistory(){
+  const el = document.getElementById('history');
+  el.style.display = el.style.display==='none' ? 'block':'none';
 }
 function renameArea(id){
   const a = STATE.areas.find(a=>a.id===id); if(!a) return;
   const name = prompt('Rename category:', a.name);
-  if(name && name.trim()){ a.name = name.trim(); save(); renderManage(); }
+  if(name && name.trim()){ a.name = name.trim(); save(); }
 }
 function removeArea(id){
   const a = STATE.areas.find(a=>a.id===id); if(!a) return;
@@ -202,7 +261,7 @@ function removeArea(id){
   STATE.tasks.forEach(t=>{ if(t.area===id) t.area='unsorted'; });
   STATE.areas = STATE.areas.filter(a=>a.id!==id);
   if(filter===id) filter=null;
-  save(); renderManage();
+  save();
 }
 
 document.getElementById('form').addEventListener('submit', function(e){
@@ -211,7 +270,7 @@ document.getElementById('form').addEventListener('submit', function(e){
   if(!title) return;
   const area = document.getElementById('area').value;
   const due = document.getElementById('due').value || null;
-  STATE.tasks.push({id:'t'+Date.now(), title, area, due, done:false});
+  STATE.tasks.push({id:'t'+Date.now(), title, area, due, completedAt:null});
   document.getElementById('title').value='';
   document.getElementById('due').value='';
   save();
@@ -224,7 +283,7 @@ document.getElementById('addAreaForm').addEventListener('submit', function(e){
   if(!name) return;
   STATE.areas.push({id:'a'+Date.now(), name});
   input.value='';
-  save(); renderManage();
+  save();
 });
 
 render();
