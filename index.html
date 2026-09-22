@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Weekly Panel</title>
+<style>
+:root{
+  --bg:#f6f5f2; --card:#ffffff; --text:#1f2328; --muted:#6b7280; --border:#e5e7eb; --accent:#2563eb;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#111318;--card:#1a1d24;--text:#e7e9ec;--muted:#9aa1ab;--border:#2a2e37;}
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:720px;margin-inline:auto;}
+h1{font-size:1.25rem;margin:4px 0 4px;}
+.subtitle{font-size:.75rem;color:var(--muted);margin-bottom:14px;}
+.top-actions{display:flex;gap:8px;margin-bottom:14px;}
+.top-actions button{font-size:.72rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;}
+.areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-bottom:10px;}
+.area-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;}
+.area-card.active{outline:2px solid var(--accent);}
+.area-card .n{font-size:1.35rem;font-weight:700;}
+.area-card .label{font-size:.7rem;color:var(--muted);}
+.manage-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:.75rem;cursor:pointer;margin-bottom:14px;}
+.manage{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;}
+.manage-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:.85rem;border-bottom:1px solid var(--border);}
+.manage-row:last-child{border-bottom:none;}
+.manage-row .name{cursor:pointer;}
+.manage-row .rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px;}
+.manage form{display:flex;gap:6px;margin:10px 0 0;}
+.insights{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:.83rem;line-height:1.6;}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px;}
+.day{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 2px;text-align:center;font-size:.68rem;cursor:pointer;}
+.day.today{border-color:var(--accent);}
+.day.active{outline:2px solid var(--accent);}
+.day .count{font-weight:700;font-size:.9rem;min-height:1.1em;}
+form{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+input,select,button{font-size:.83rem;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);}
+input[type=text]{flex:1;min-width:140px;}
+button{background:var(--accent);color:#fff;border:none;cursor:pointer;}
+.task{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
+.task.done .title{text-decoration:line-through;color:var(--muted);}
+.task .title{flex:1;font-size:.86rem;}
+.task .meta{font-size:.68rem;color:var(--muted);}
+.overdue{color:#dc2626;}
+.del{background:none;color:var(--muted);border:none;font-size:1rem;cursor:pointer;padding:2px 6px;}
+.empty{color:var(--muted);font-size:.83rem;text-align:center;padding:18px 0;}
+</style>
+</head>
+<body>
+<h1>🗂️ Weekly Panel</h1>
+<div class="subtitle">Data is saved only in this browser (localStorage). Use Export to back it up.</div>
+<div class="top-actions">
+  <button type="button" onclick="exportBackup()">⬇ Export backup</button>
+  <button type="button" onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+</div>
+<div class="areas" id="areas"></div>
+<button class="manage-toggle" id="manageToggle" type="button" onclick="toggleManage()">⚙ Manage categories</button>
+<div class="manage" id="manage" style="display:none">
+  <div id="manageList"></div>
+  <form id="addAreaForm">
+    <input type="text" id="newAreaName" placeholder="New category name" required>
+    <button type="submit">Add</button>
+  </form>
+</div>
+<div class="insights" id="insights"></div>
+<div class="week" id="week"></div>
+<form id="form">
+  <input type="text" id="title" placeholder="New task..." required>
+  <select id="area"></select>
+  <input type="date" id="due">
+  <button type="submit">+ Add</button>
+</form>
+<div id="tasks"></div>
+
+<script>
+const STORAGE_KEY = 'weeklyPanelData';
+const DEFAULT_STATE = {"areas":[{"id":"unsorted","name":"Unsorted"},{"id":"personal","name":"Personal"},{"id":"work","name":"Work"},{"id":"gcm","name":"GCM"},{"id":"english","name":"English"},{"id":"mealprep","name":"Meal Prep"}],"tasks":[{"id":"t1","title":"Organize this month's bills","area":"personal","due":null,"done":false},{"id":"t2","title":"Study schedule - next exam","area":"english","due":null,"done":false},{"id":"t3","title":"Confirm this week's orders","area":"mealprep","due":null,"done":false},{"id":"t4","title":"Review course material","area":"gcm","due":null,"done":false}]};
+
+let STATE;
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  STATE = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+} catch(e) {
+  STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+let filter = null;
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return ''; const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function areaName(id){ const a=STATE.areas.find(a=>a.id===id); return a?a.name:id; }
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function save(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); } catch(e) {}
+  render();
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'weekly-panel-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('importFile').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(data && data.areas && data.tasks){ STATE = data; save(); renderManage(); }
+      else alert('Invalid backup file.');
+    } catch(err){ alert('Could not read this file.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function render(){
+  const today = todayISO();
+  document.getElementById('areas').innerHTML =
+    STATE.areas.map(a=>{
+      const pend = STATE.tasks.filter(t=>t.area===a.id && !t.done).length;
+      return `<div class="area-card ${filter===a.id?'active':''}" onclick="setFilter('${a.id}')"><div class="n">${pend}</div><div class="label">${a.name}</div></div>`;
+    }).join('') +
+    `<div class="area-card ${filter===null?'active':''}" onclick="setFilter(null)"><div class="n">${STATE.tasks.filter(t=>!t.done).length}</div><div class="label">All</div></div>`;
+
+  const overdue = STATE.tasks.filter(t=>!t.done && t.due && t.due<today).length;
+  const next7 = STATE.tasks.filter(t=>!t.done && t.due && t.due>=today && t.due<=addDays(today,7)).length;
+  let topArea=null, topN=0;
+  STATE.areas.forEach(a=>{ const n=STATE.tasks.filter(t=>t.area===a.id&&!t.done).length; if(n>topN){topN=n; topArea=a.name;} });
+  const bits=[];
+  if(overdue>0) bits.push('<span class="overdue">⚠️ '+overdue+' overdue task(s)</span>');
+  bits.push('📅 '+next7+' task(s) due in the next 7 days');
+  if(topN>0) bits.push('📌 Most pending: '+topArea+' ('+topN+')');
+  document.getElementById('insights').innerHTML = bits.length? bits.join(' &nbsp;•&nbsp; ') : 'All caught up ✨';
+
+  let wk='';
+  for(let i=0;i<7;i++){
+    const iso = addDays(today,i);
+    const d = new Date(iso+'T00:00:00');
+    const n = STATE.tasks.filter(t=>!t.done && t.due===iso).length;
+    const key='day:'+iso;
+    wk += `<div class="day ${i===0?'today':''} ${filter===key?'active':''}" onclick="setDayFilter('${iso}')"><div>${d.toLocaleDateString('en-US',{weekday:'short'})}</div><div class="count">${n||''}</div></div>`;
+  }
+  document.getElementById('week').innerHTML = wk;
+
+  document.getElementById('area').innerHTML = STATE.areas.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+
+  let list = STATE.tasks.slice().sort((a,b)=> (a.due||'9999')<(b.due||'9999')?-1:1);
+  if(filter && filter.indexOf('day:')===0) list = list.filter(t=>t.due===filter.slice(4));
+  else if(filter) list = list.filter(t=>t.area===filter);
+  const tasksEl = document.getElementById('tasks');
+  if(list.length===0){ tasksEl.innerHTML = '<div class="empty">No tasks here ✨</div>'; }
+  else {
+    tasksEl.innerHTML = list.map(t=>{
+      const late = !t.done && t.due && t.due<today;
+      return `<div class="task ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')"><div style="flex:1"><div class="title">${escapeHtml(t.title)}</div><div class="meta ${late?'overdue':''}">${areaName(t.area)}${t.due?' • '+fmtDate(t.due):''}</div></div><button class="del" onclick="deleteTask('${t.id}')">✕</button></div>`;
+    }).join('');
+  }
+}
+
+function renderManage(){
+  document.getElementById('manageList').innerHTML = STATE.areas.map(a=>{
+    const locked = a.id==='unsorted';
+    const nameHtml = locked ? (a.name+' 🔒') : a.name;
+    const nameAttr = locked ? '' : `onclick="renameArea('${a.id}')"`;
+    const rmBtn = locked ? '' : `<button class="rm" onclick="removeArea('${a.id}')">✕</button>`;
+    return `<div class="manage-row"><span class="name" ${nameAttr}>${nameHtml}</span>${rmBtn}</div>`;
+  }).join('');
+}
+
+function setFilter(id){ filter = filter===id? null : id; render(); }
+function setDayFilter(iso){ const key='day:'+iso; filter = filter===key? null : key; render(); }
+function toggleTask(id){ const t=STATE.tasks.find(t=>t.id===id); if(t){ t.done=!t.done; save(); } }
+function deleteTask(id){ STATE.tasks = STATE.tasks.filter(t=>t.id!==id); save(); }
+function toggleManage(){
+  const el = document.getElementById('manage');
+  const show = el.style.display==='none';
+  el.style.display = show? 'block':'none';
+  if(show) renderManage();
+}
+function renameArea(id){
+  const a = STATE.areas.find(a=>a.id===id); if(!a) return;
+  const name = prompt('Rename category:', a.name);
+  if(name && name.trim()){ a.name = name.trim(); save(); renderManage(); }
+}
+function removeArea(id){
+  const a = STATE.areas.find(a=>a.id===id); if(!a) return;
+  const count = STATE.tasks.filter(t=>t.area===id).length;
+  const msg = count>0 ? ('Delete "'+a.name+'"? '+count+' task(s) will move to Unsorted.') : ('Delete "'+a.name+'"?');
+  if(!confirm(msg)) return;
+  STATE.tasks.forEach(t=>{ if(t.area===id) t.area='unsorted'; });
+  STATE.areas = STATE.areas.filter(a=>a.id!==id);
+  if(filter===id) filter=null;
+  save(); renderManage();
+}
+
+document.getElementById('form').addEventListener('submit', function(e){
+  e.preventDefault();
+  const title = document.getElementById('title').value.trim();
+  if(!title) return;
+  const area = document.getElementById('area').value;
+  const due = document.getElementById('due').value || null;
+  STATE.tasks.push({id:'t'+Date.now(), title, area, due, done:false});
+  document.getElementById('title').value='';
+  document.getElementById('due').value='';
+  save();
+});
+
+document.getElementById('addAreaForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const input = document.getElementById('newAreaName');
+  const name = input.value.trim();
+  if(!name) return;
+  STATE.areas.push({id:'a'+Date.now(), name});
+  input.value='';
+  save(); renderManage();
+});
+
+render();
+</script>
+</body>
+</html>
